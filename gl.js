@@ -125,13 +125,13 @@ function loadTexture(gl, url) {
 let lid=0;
 let headX = 0;
 let headY = 0;
-let followMouse = false;
 
 function calcBoneMatrix() {
-  if(followMouse) {
-     headX = mouseX; headY = mouseY; 
+  if(mousePressed) {
+     var a = 0.5;
+     headX = headX * a + (1-a) * mouseX; 
+     headY = headY * a + (1-a) * mouseY; 
   }
-  if(mousePressed) followMouse = false;
   
   var vol = (mic?mic.getLevel(0.7):0);
   var sens = 1-document.getElementById("sensitivity").value;
