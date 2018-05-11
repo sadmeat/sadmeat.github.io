@@ -1,4 +1,4 @@
-var cubeRotation = 0.0;
+var time = 0.0;
 var mic;
 var mouseX = 0;
 var mouseY = 0;
@@ -41,8 +41,11 @@ function main() {
       modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
       bones: gl.getUniformLocation(shaderProgram, 'uBones'),
       eyes: gl.getUniformLocation(shaderProgram, 'uEyes'),
+      hat: gl.getUniformLocation(shaderProgram, 'uHat'),
       aoTexture: gl.getUniformLocation(shaderProgram, 'aoTexture'),
       norTexture: gl.getUniformLocation(shaderProgram, 'norTexture'),
+      hatTexture: gl.getUniformLocation(shaderProgram, 'hatTexture'),
+      fabricTexture: gl.getUniformLocation(shaderProgram, 'fabricTexture'),
     },
   };
 
@@ -50,6 +53,8 @@ function main() {
   const buffers = initBuffers(gl);
   const texture1 = loadTexture(gl, 'tex_ao.png');
   const texture2 = loadTexture(gl, 'tex_nor.png');
+  const texture3 = loadTexture(gl, 'tex_hat.png');
+  const texture4 = loadTexture(gl, 'tex_fabric.png');
 
   console.log(programInfo, buffers, gl)
   
@@ -60,7 +65,7 @@ function main() {
     const deltaTime = now - then;
     then = now;
 
-    drawScene(gl, programInfo, buffers, texture1, texture2, deltaTime);
+    drawScene(gl, programInfo, buffers, [texture1, texture2, texture3, texture4], deltaTime);
 
     requestAnimationFrame(render);
   }
@@ -71,35 +76,39 @@ function main() {
 function initBuffers(gl) {
   const positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(position), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.p), gl.STATIC_DRAW);
 
   const textureCoordBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.uv), gl.STATIC_DRAW);
 
   const normalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normal), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.n), gl.STATIC_DRAW);
 
   const tangentBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangent), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.t), gl.STATIC_DRAW);
 
   const boneIndexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, boneIndexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(boneIndex), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(v.bi), gl.STATIC_DRAW);
 
   const boneWeightBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, boneWeightBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boneWeight), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v.bw), gl.STATIC_DRAW);
 
   const indexBuffer1 = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer1);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(objIndex1), gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(v.t1), gl.STATIC_DRAW);
   
   const indexBuffer2 = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(objIndex2), gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(v.t2), gl.STATIC_DRAW);
+  
+  const indexBuffer3 = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer3);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(v.t3), gl.STATIC_DRAW);
 
   return {
     position: positionBuffer,
@@ -110,6 +119,7 @@ function initBuffers(gl) {
     boneWeight: boneWeightBuffer,
     indices1: indexBuffer1,
     indices2: indexBuffer2,
+    indices3: indexBuffer3,
   };
 }
 
@@ -145,7 +155,7 @@ function calcBoneMatrix() {
   var sens = 1-document.getElementById("sensitivity").value;
   var vol2 = Math.pow(Math.max(vol-0.05, 0), 1.5*sens);
   
-  var t = 0.01*Math.sin(cubeRotation*1.5);
+  var t = 0.01*Math.sin(time*1.5);
   
   var mNeck1 = mat4.create();
   var mNeck2 = mat4.create();
@@ -175,13 +185,15 @@ function calcBoneMatrix() {
   mat4.translate(mBottomLip, mBottomLip, [0, 0.1*vol2, -0.5*vol2-t])
   mat4.mul(mBottomLip, mHead, mBottomLip);
   
+  var x = (time%7 < 0.25 && document.querySelector("#activateBlink").checked) ? Math.sin(time%1*4*Math.PI):0;
+
   
   mat4.invert(mEyeLid_R, ...bonesLocal[6]);
+  mat4.translate(mEyeLid_R, mEyeLid_R, [0.1*x*x, 0, -0.05*x*x])
   mat4.mul(mEyeLid_R, mHead, mEyeLid_R);
   
   mat4.invert(mEyeLid_L, ...bonesLocal[7]);
-  //lid = 0.9*lid+ 0.1*(mousePressed?1:0);
-  mat4.translate(mEyeLid_L, mEyeLid_L, [0, 0, 0.2*lid])
+  mat4.translate(mEyeLid_L, mEyeLid_L, [-0.1*x*x, 0, -0.05*x*x])
   mat4.mul(mEyeLid_L, mHead, mEyeLid_L);
   
   return [...mNeck1, ...mNeck2, ...mNeck3, ...mHead, 
@@ -189,7 +201,7 @@ function calcBoneMatrix() {
     
 }
 
-function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime) {
+function drawScene(gl, programInfo, buffers, texture, deltaTime) {
   gl.clearColor(0.0, 1.0, 0.0, 1.0);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -212,8 +224,8 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
   
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -6]); 
   //mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -20.5]); 
-  mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/2+0.01*Math.sin(cubeRotation*1.5), [1, 0, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, +0.125+0.06*Math.sin(cubeRotation*0.6), [0, 0, 1]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/2+0.01*Math.sin(time*1.5), [1, 0, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, +0.125+0.06*Math.sin(time*0.6), [0, 0, 1]);
   
   {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
@@ -244,29 +256,42 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
   gl.useProgram(programInfo.program);
   
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, texture_ao);
+  gl.bindTexture(gl.TEXTURE_2D, texture[0]);
   gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, texture_nor);
+  gl.bindTexture(gl.TEXTURE_2D, texture[1]);
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, texture[2]);
+  gl.activeTexture(gl.TEXTURE3);
+  gl.bindTexture(gl.TEXTURE_2D, texture[3]);
   
   gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
   gl.uniform1i(programInfo.uniformLocations.aoTexture, 0);
   gl.uniform1i(programInfo.uniformLocations.norTexture, 1);
+  gl.uniform1i(programInfo.uniformLocations.hatTexture, 2);
+  gl.uniform1i(programInfo.uniformLocations.fabricTexture, 3);
   
   gl.uniformMatrix4fv(programInfo.uniformLocations.bones, false, calcBoneMatrix());
 
   {
     gl.uniform1i(programInfo.uniformLocations.eyes, false);
+    gl.uniform1i(programInfo.uniformLocations.hat, true);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices3);
+    
+    if(document.querySelector("#activateHat").checked)
+        gl.drawElements(gl.TRIANGLES, v.t3.length, gl.UNSIGNED_SHORT, 0);
+    
+    gl.uniform1i(programInfo.uniformLocations.hat, false);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices1);
-    gl.drawElements(gl.TRIANGLES, objIndex1.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, v.t1.length, gl.UNSIGNED_SHORT, 0);
     
     gl.uniform1i(programInfo.uniformLocations.eyes, true);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices2);
-    gl.drawElements(gl.TRIANGLES, objIndex2.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, v.t2.length, gl.UNSIGNED_SHORT, 0);
   }
 
 
-  cubeRotation += deltaTime;
+  time += deltaTime;
 }
 
 function initShaderProgram(gl, vsSource, fsSource) {
