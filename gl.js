@@ -40,8 +40,8 @@ function main() {
 
 
   const buffers = initBuffers(gl);
-  const texture1 = loadTexture(gl, 'tex_ao.png', 1000);
-  const texture2 = loadTexture(gl, 'tex_nor.png', 2000);
+  const texture1 = loadTexture(gl, 'tex_ao.png');
+  const texture2 = loadTexture(gl, 'tex_nor.png');
 
   console.log(programInfo, buffers, gl)
   
@@ -105,18 +105,16 @@ function initBuffers(gl) {
   };
 }
 
-function loadTexture(gl, url, t) {
+function loadTexture(gl, url) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255]));
 
   const image = new Image();
   image.onload = function() {
-    setTimeout(()=> {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);        
-    }, t);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);        
   };
   image.src = url;
 
