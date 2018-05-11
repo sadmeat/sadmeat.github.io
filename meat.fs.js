@@ -34,7 +34,7 @@ const fsSource = `
         if(!uEyes) {
             mediump vec3 baseColor1 = vec3(1.0, 0.597202, 0.401978);
             mediump vec3 baseColor2 = vec3(0.461568, 0.086268, 0.056358);
-            mediump float fresnel = pow(max(dot(normal, vec3(0, 0, -1)), 0.0), 1.83);
+            mediump float fresnel = pow(max(dot(normal, vec3(0, 0, -1)), 0.0), 1.3);
             mediump float ao = texture2D(aoTexture, vTextureCoord).r;
 
             baseColor1 = blendSoftLight(baseColor1, vec3(ao));
