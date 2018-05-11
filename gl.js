@@ -1,13 +1,18 @@
 var cubeRotation = 0.0;
 var mic;
-var vol = 0;
+var mouseX = 0;
+var mouseY = 0;
+var mousePressed = false;
 
 window.onload = () => main();
 
-
 function main() {
-  mic = new p5.AudioIn();
-  mic.start();
+  if(isExe())
+      document.querySelector('#download').remove();
+  
+  document.onmousemove = mouseHandle;
+  document.onmousedown = mouseHandle;
+  document.onmouseup = mouseHandle;
   
   const canvas = document.querySelector('#canvas');
   const gl = canvas.getContext('webgl', {antialias: true});
@@ -35,8 +40,8 @@ function main() {
 
 
   const buffers = initBuffers(gl);
-  const texture1 = loadTexture(gl, 'tex_ao.png');
-  const texture2 = loadTexture(gl, 'tex_nor.png');
+  const texture1 = loadTexture(gl, 'tex_ao.png', 1000);
+  const texture2 = loadTexture(gl, 'tex_nor.png', 2000);
 
   console.log(programInfo, buffers, gl)
   
@@ -100,20 +105,82 @@ function initBuffers(gl) {
   };
 }
 
-function loadTexture(gl, url) {
+function loadTexture(gl, url, t) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255]));
 
   const image = new Image();
   image.onload = function() {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    setTimeout(()=> {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);        
+    }, t);
   };
   image.src = url;
 
   return texture;
+}
+
+
+let lid=0;
+let headX = 0;
+let headY = 0;
+let followMouse = false;
+
+function calcBoneMatrix() {
+  if(followMouse) {
+     headX = mouseX; headY = mouseY; 
+  }
+  if(mousePressed) followMouse = false;
+  
+  var vol = (mic?mic.getLevel(0.7):0);
+  var sens = 1-document.getElementById("sensitivity").value;
+  var vol2 = Math.pow(Math.max(vol-0.05, 0), 1.5*sens);
+  
+  var t = 0.01*Math.sin(cubeRotation*1.5);
+  
+  var mNeck1 = mat4.create();
+  var mNeck2 = mat4.create();
+  var mNeck3 = mat4.create();
+  var mHead = mat4.create();
+  var mTopLip = mat4.create();
+  var mBottomLip = mat4.create();
+  var mEyeLid_R = mat4.create();
+  var mEyeLid_L = mat4.create();
+  
+  mat4.set(mNeck3, ...bonesInv[2]);
+  mat4.rotate(mNeck3, mNeck3, 0.5*(headX), [0, 0, 1])
+  mat4.mul(mNeck3, bonesMat[2], mNeck3);
+  
+  mat4.invert(mHead, ...bonesLocal[3]);
+  mat4.rotate(mHead, mHead, 0.5*(headY), [1, 0, 0])
+  mat4.rotate(mHead, mHead, 0.5*(headX), [0, 0, 1])
+  mat4.mul(mHead,  mNeck3, mHead)
+  
+  mat4.invert(mTopLip, ...bonesLocal[4]);
+  //mat4.rotate(mTopLip, mTopLip, 0.1*vol2+t, [-1, 0, 0])
+  mat4.translate(mTopLip, mTopLip, [0, 0.1*vol2, 0.5*vol2+t])
+  mat4.mul(mTopLip, mHead, mTopLip);
+  
+  mat4.invert(mBottomLip, ...bonesLocal[5]);
+  //mat4.rotate(mBottomLip, mBottomLip, 1.1*vol2+t, [0, 0, 1])
+  mat4.translate(mBottomLip, mBottomLip, [0, 0.1*vol2, -0.5*vol2-t])
+  mat4.mul(mBottomLip, mHead, mBottomLip);
+  
+  
+  mat4.invert(mEyeLid_R, ...bonesLocal[6]);
+  mat4.mul(mEyeLid_R, mHead, mEyeLid_R);
+  
+  mat4.invert(mEyeLid_L, ...bonesLocal[7]);
+  //lid = 0.9*lid+ 0.1*(mousePressed?1:0);
+  mat4.translate(mEyeLid_L, mEyeLid_L, [0, 0, 0.2*lid])
+  mat4.mul(mEyeLid_L, mHead, mEyeLid_L);
+  
+  return [...mNeck1, ...mNeck2, ...mNeck3, ...mHead, 
+          ...mTopLip, ...mBottomLip, ...mEyeLid_R, ...mEyeLid_L]
+    
 }
 
 function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime) {
@@ -125,8 +192,6 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  vol = vol*0.7 + 0.3*mic.getLevel();
-  var vol2 = Math.pow(Math.max(vol-0.04, 0), 0.4);
 
   const fieldOfView = 70 * Math.PI / 180;   // in radians
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
@@ -134,47 +199,15 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
   const zFar = 100.0;
   const projectionMatrix = mat4.create();
 
-  // note: glmatrix.js always has the first argument
-  // as the destination to receive the result.
-  mat4.perspective(projectionMatrix,
-                   fieldOfView,
-                   aspect,
-                   zNear,
-                   zFar);
+  mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
   const modelViewMatrix = mat4.create();
-
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
-
-  mat4.translate(modelViewMatrix,     // destination matrix
-                 modelViewMatrix,     // matrix to translate
-                 [-0.0, -4.0, -4.5]);  // amount to translate
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
-              -Math.PI/2+0.01*Math.sin(cubeRotation*1.5),// amount to rotate in radians
-              [1, 0, 0]);       // axis to rotate around (X)
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
-              0.125+0*0.06*Math.sin(cubeRotation*0.6),     // amount to rotate in radians
-              [0, 0, 1]);       // axis to rotate around (Z)
-
-  var m = mat4.create();
-  var m2 = mat4.create();
-  var m3 = mat4.create();
   
-  mat4.translate(m2,  m2, [0, 0.5*vol2, -0.5*vol2])   
-  mat4.translate(m3,  m3, [0, -0.5*vol2, -0.5*vol2])   
-  //mat4.rotate(m2,  m2,  Math.sin(cubeRotation), [1, 0, 0])
-  //mat4.translate(m2,  m2, [0, -0.957687, 3.7845469])
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -4.5]); 
+  //mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -20.5]); 
+  mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/2+0.01*Math.sin(cubeRotation*1.5), [1, 0, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, +0.125+0.06*Math.sin(cubeRotation*0.6), [0, 0, 1]);
   
-  
-  //           Neck1 Neck2 Neck3 Head TopLip BottomLip EyeLid_R EyeLid_L
-  var bones = [...m, ...m, ...m, ...m, ...m2, ...m3, ...m, ...m]
-  
-
   {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
@@ -213,7 +246,7 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
   gl.uniform1i(programInfo.uniformLocations.aoTexture, 0);
   gl.uniform1i(programInfo.uniformLocations.norTexture, 1);
   
-  gl.uniformMatrix4fv(programInfo.uniformLocations.bones, false, bones);
+  gl.uniformMatrix4fv(programInfo.uniformLocations.bones, false, calcBoneMatrix());
 
   {
     gl.uniform1i(programInfo.uniformLocations.eyes, false);
@@ -260,4 +293,17 @@ function initShaderProgram(gl, vsSource, fsSource) {
   return shaderProgram;
 }
 
+function isExe() {
+    return new URL(window.location.href).searchParams.get("exe")!==null;
+}
 
+function mouseHandle(e){
+    var w = window,
+        g = document.getElementsByTagName('body')[0],
+        x = w.innerWidth || document.documentElement.clientWidth || g.clientWidth,
+        y = w.innerHeight|| document.documentElement.clientHeight|| g.clientHeight;
+
+    mouseX = e.clientX/x*2 - 1;
+    mouseY = e.clientY/y*2 - 1;
+    mousePressed = e.buttons !==0;
+}

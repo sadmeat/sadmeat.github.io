@@ -22,21 +22,20 @@ const vsSource = `
         //vBoneWeight = aBoneWeight;
         
         mat4 skinning = mat4(0.0);
-		
-		skinning += aBoneWeight.x * uBones[int(aBoneIndex.x)];
-		skinning += aBoneWeight.y * uBones[int(aBoneIndex.y)];
-		skinning += aBoneWeight.z * uBones[int(aBoneIndex.z)];
-		skinning += aBoneWeight.w * uBones[int(aBoneIndex.w)];
         
+        skinning += aBoneWeight.x * uBones[int(aBoneIndex.x)];
+        skinning += aBoneWeight.y * uBones[int(aBoneIndex.y)];
+        skinning += aBoneWeight.z * uBones[int(aBoneIndex.z)];
+        skinning += aBoneWeight.w * uBones[int(aBoneIndex.w)];
         
-        vec4 positionRelativeToCam = skinning * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+        vec4 positionRelativeToCam = uModelViewMatrix * skinning * vec4(aVertexPosition, 1.0);
         gl_Position = uProjectionMatrix * positionRelativeToCam;
         
         vTextureCoord.x = aTextureCoord.x;
         vTextureCoord.y = 1.0-aTextureCoord.y;
         
-        vec3 norm = normalize((uModelViewMatrix * vec4(aNormal,0.0)).xyz);
-        vec3 tang = normalize((uModelViewMatrix * vec4(aTangent, 0.0)).xyz);
+        vec3 norm = normalize((uModelViewMatrix * skinning * vec4(aNormal,0.0)).xyz);
+        vec3 tang = normalize((uModelViewMatrix * skinning * vec4(aTangent, 0.0)).xyz);
         vec3 bitang = normalize(cross(norm, tang));
         
         mat3 toTangentSpace = mat3(
@@ -44,13 +43,12 @@ const vsSource = `
             tang.y, bitang.y, norm.y,
             tang.z, bitang.z, norm.z
         );
-  
         
         //toLightVector = toTangentSpace * (lightPositionEyeSpace - positionRelativeToCam.xyz);
         toLightVector = toTangentSpace * vec3(-1, 0.5, 1);
         toCameraVector = toTangentSpace * (-positionRelativeToCam.xyz);
         
-        vNormal = (uProjectionMatrix * uModelViewMatrix * vec4(aNormal, 0)).xyz;
+        vNormal = (uProjectionMatrix * uModelViewMatrix * skinning * vec4(aNormal, 0)).xyz;
         vTangent = (uBones[0]*vec4(aTangent,1.0)).xyz;
     }
 `;
