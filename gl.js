@@ -10,12 +10,20 @@ function main() {
   if(isExe())
       document.querySelector('#download').remove();
   
-  document.onmousemove = mouseHandle;
-  document.onmousedown = mouseHandle;
-  document.onmouseup = mouseHandle;
-  
   const canvas = document.querySelector('#canvas');
   const gl = canvas.getContext('webgl', {antialias: true});
+  
+  canvas.onmousemove = mouseHandle;
+  canvas.onmousedown = mouseHandle;
+  canvas.onmouseup = mouseHandle;
+  
+  window.addEventListener('resize', resizeCanvas, false);
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight-50;
+  }
+  resizeCanvas();
+  
   const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 
   const programInfo = {
@@ -189,9 +197,10 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
 
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 
-  const fieldOfView = 70 * Math.PI / 180;   // in radians
+  const fieldOfView = 50 * Math.PI / 180;   // in radians
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
   const zFar = 100.0;
@@ -201,7 +210,7 @@ function drawScene(gl, programInfo, buffers, texture_ao, texture_nor, deltaTime)
 
   const modelViewMatrix = mat4.create();
   
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -4.5]); 
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -6]); 
   //mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -20.5]); 
   mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/2+0.01*Math.sin(cubeRotation*1.5), [1, 0, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, +0.125+0.06*Math.sin(cubeRotation*0.6), [0, 0, 1]);
@@ -296,12 +305,7 @@ function isExe() {
 }
 
 function mouseHandle(e){
-    var w = window,
-        g = document.getElementsByTagName('body')[0],
-        x = w.innerWidth || document.documentElement.clientWidth || g.clientWidth,
-        y = w.innerHeight|| document.documentElement.clientHeight|| g.clientHeight;
-
-    mouseX = e.clientX/x*2 - 1;
-    mouseY = e.clientY/y*2 - 1;
+    mouseX = e.clientX/window.innerWidth*2 - 1;
+    mouseY = e.clientY/(window.innerHeight-50)*2 - 1;
     mousePressed = e.buttons !==0;
 }
