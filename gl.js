@@ -309,3 +309,15 @@ function mouseHandle(e){
     mouseY = e.clientY/(window.innerHeight-50)*2 - 1;
     mousePressed = e.buttons !==0;
 }
+
+function toggleMic() {
+    if(mic === undefined) {
+        mic = new Microphone();
+        mic.init();
+        return true;
+    } else {
+        mic = undefined;
+        return false;
+    }
+    
+}

@@ -73,7 +73,8 @@
     
     <div id="settings">
         Sensitivity: <input type="range" min="0" max="0.99" value="0.8" step="0.01" id="sensitivity"/> |
-        <button onclick="mic = new Microphone(); mic.init();">Start Mic!</button>
+        <button onclick="this.innerHTML = toggleMic()?'Stop Mic':'Start Mic'">Start Mic</button> |
+        <button onclick="location.reload(true)">Refresh</button>
     </div>
 </body>
 </html>
