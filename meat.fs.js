@@ -41,18 +41,6 @@ const fsSource = `
             mediump float fresnel = fresnel_(normal, vec3(0, 0, -1), 2.0);
             color = blendSoftLight(texture2D(hatTexture, vTextureCoord).rgb, (texture2D(fabricTexture, vTextureCoord*2.0).rgb-0.6)*0.4+0.6);
             color = mix(color, color*0.7, fresnel);
-            //color = texture2D(hatTexture, vTextureCoord).rgb;
-            //color = vec3(vTextureCoord, 1.0);
-            
-            /*mediump vec3 unitVectorToCamera = normalize(toCameraVector);
-            mediump vec3 unitLightVector = normalize(toLightVector);
-            
-            mediump vec3 reflectedLightDirection = reflect(-unitLightVector, unitNormal);
-            
-            mediump float nDotl = max(dot(unitNormal, unitLightVector)*0.5+0.5, 0.0);
-            mediump float specularFactor = max(dot(reflectedLightDirection, unitVectorToCamera), 0.0);
-            
-            mediump float dampedFactor = pow(specularFactor, 200.0);*/
             
             totalDiffuse = vec3(fresnel_(normal, vec3(0, 0, -1), 0.5));
             totalSpecular = vec3(0.0);
@@ -65,7 +53,6 @@ const fsSource = `
 
             baseColor1 = blendSoftLight(baseColor1, vec3(ao));
             color = mix(baseColor2, baseColor1, fresnel);
-            
             
             mediump vec3 unitVectorToCamera = normalize(toCameraVector);
             mediump vec3 unitLightVector = normalize(toLightVector);

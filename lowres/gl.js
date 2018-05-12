@@ -1,4 +1,6 @@
 var time = 0.0;
+var FPS = 30;
+
 var mic;
 var mouseX = 0;
 var mouseY = 0;
@@ -53,23 +55,18 @@ function main() {
   const buffers = initBuffers(gl);
   const texture1 = loadTexture(gl, 'tex_ao.png');
   const texture2 = loadTexture(gl, 'tex_nor.png');
-  const texture3 = loadTexture(gl, 'tex_hat.png');
-  const texture4 = loadTexture(gl, 'tex_fabric.png');
+  const texture3 = loadTexture(gl, '../tex_hat.png');
+  const texture4 = loadTexture(gl, '../tex_fabric.png');
 
   console.log(programInfo, buffers, gl)
   
   
-  var then = 0;
-  function render(now) {
-    now *= 0.001;  // convert to seconds
-    const deltaTime = now - then;
-    then = now;
-
-    drawScene(gl, programInfo, buffers, [texture1, texture2, texture3, texture4], deltaTime);
-
-    requestAnimationFrame(render);
+  function render() {
+    drawScene(gl, programInfo, buffers, [texture1, texture2, texture3, texture4]);
+    setTimeout(render, 1000/FPS);
   }
-  requestAnimationFrame(render);
+  
+  setTimeout(render, 1000/FPS);
 }
 
 
@@ -126,7 +123,7 @@ function initBuffers(gl) {
 function loadTexture(gl, url) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255]));
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0]));
 
   const image = new Image();
   image.onload = function() {
@@ -157,47 +154,32 @@ function calcBoneMatrix() {
   
   var t = 0.01*Math.sin(time*1.5);
   
-  var mNeck1 = mat4.create();
-  var mNeck2 = mat4.create();
-  var mNeck3 = mat4.create();
+  var mNeck = mat4.create();
   var mHead = mat4.create();
   var mTopLip = mat4.create();
   var mBottomLip = mat4.create();
-  var mEyeLid_R = mat4.create();
-  var mEyeLid_L = mat4.create();
   
-  mat4.set(mNeck3, ...bonesInv[2]);
-  mat4.rotate(mNeck3, mNeck3, 0.5*(headX), [0, 0, 1])
-  mat4.mul(mNeck3, bonesMat[2], mNeck3);
+  mat4.set(mNeck, ...bonesInv[0]);
+  mat4.rotate(mNeck, mNeck, 0.5*(headX), [0, 0, 1])
+  mat4.mul(mNeck, bonesMat[0], mNeck);
   
-  mat4.invert(mHead, ...bonesLocal[3]);
+  mat4.invert(mHead, ...bonesLocal[1]);
   mat4.rotate(mHead, mHead, 0.5*(headY), [1, 0, 0])
   mat4.rotate(mHead, mHead, 0.5*(headX), [0, 0, 1])
-  mat4.mul(mHead,  mNeck3, mHead)
+  mat4.mul(mHead,  mNeck, mHead)
   
-  mat4.invert(mTopLip, ...bonesLocal[4]);
+  mat4.invert(mTopLip, ...bonesLocal[2]);
   //mat4.rotate(mTopLip, mTopLip, 0.1*vol2+t, [-1, 0, 0])
   mat4.translate(mTopLip, mTopLip, [0, 0.1*vol2, 0.5*vol2+t])
   mat4.mul(mTopLip, mHead, mTopLip);
   
-  mat4.invert(mBottomLip, ...bonesLocal[5]);
+  mat4.invert(mBottomLip, ...bonesLocal[3]);
   //mat4.rotate(mBottomLip, mBottomLip, 1.1*vol2+t, [0, 0, 1])
   mat4.translate(mBottomLip, mBottomLip, [0, 0.1*vol2, -0.5*vol2-t])
   mat4.mul(mBottomLip, mHead, mBottomLip);
   
-  var x = (time%7 < 0.25 && document.querySelector("#activateBlink").checked) ? Math.sin(time%1*4*Math.PI):0;
-
   
-  mat4.invert(mEyeLid_R, ...bonesLocal[6]);
-  mat4.translate(mEyeLid_R, mEyeLid_R, [0.1*x*x, 0, -0.05*x*x])
-  mat4.mul(mEyeLid_R, mHead, mEyeLid_R);
-  
-  mat4.invert(mEyeLid_L, ...bonesLocal[7]);
-  mat4.translate(mEyeLid_L, mEyeLid_L, [-0.1*x*x, 0, -0.05*x*x])
-  mat4.mul(mEyeLid_L, mHead, mEyeLid_L);
-  
-  return [...mNeck1, ...mNeck2, ...mNeck3, ...mHead, 
-          ...mTopLip, ...mBottomLip, ...mEyeLid_R, ...mEyeLid_L]
+  return [...mNeck, ...mHead, ...mTopLip, ...mBottomLip]
     
 }
 
@@ -245,11 +227,11 @@ function drawScene(gl, programInfo, buffers, texture, deltaTime) {
     gl.enableVertexAttribArray(programInfo.attribLocations.tangent);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.boneIndex);
-    gl.vertexAttribPointer(programInfo.attribLocations.boneIndex, 4, gl.UNSIGNED_BYTE, false, 0, 0);
+    gl.vertexAttribPointer(programInfo.attribLocations.boneIndex, 3, gl.UNSIGNED_BYTE, false, 0, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.boneIndex);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.boneWeight);
-    gl.vertexAttribPointer(programInfo.attribLocations.boneWeight, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(programInfo.attribLocations.boneWeight, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.boneWeight);
   }
 
@@ -291,7 +273,7 @@ function drawScene(gl, programInfo, buffers, texture, deltaTime) {
   }
 
 
-  time += deltaTime;
+  time += 1/FPS;
 }
 
 function initShaderProgram(gl, vsSource, fsSource) {

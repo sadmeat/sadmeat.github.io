@@ -3,12 +3,12 @@
     <meta http-equiv="Cache-control" content="no-cache">
     <meta http-equiv="Expires" content="-1">
     
-    <script src="gl.matrix.js"></script>
-    <script src="mic.js"></script>
+    <script src="../gl.matrix.js"></script>
+    <script src="../mic.js"></script>
     <script src="meat.verts.js"></script>
     <script src="meat.bones.js"></script>
-    <script src="meat.vs.js"></script>
-    <script src="meat.fs.js"></script>
+    <script src="../meat.vs.js"></script>
+    <script src="../meat.fs.js"></script>
     <script src="gl.js"></script>
     <style>
     * {
@@ -72,8 +72,8 @@
     <canvas id="canvas" height="800px" width="1000px"></canvas>
     
     <div id="download">
-        <span id="goto">Go to <a href="./lowres">LowRes</a> | </span>
-        Download
+        <span id="goto">Go to <a href="./..">HighRes</a> | </span>
+        Download 
         <a href="https://drive.google.com/file/d/1mvwOgxbumgtbjmIzpbxVtaX3Dccfyk5p/view" target="_blank">here</a>(HighRes) or
         <a href="https://drive.google.com/file/d/1hGwf4JHOAmU4UD-OR1OmRJ8MmXYK6a8c/view" target="_blank">here</a>(LowRes)! 
         (<a href="#" onclick="this.parentElement.remove()">close</a>)
@@ -82,7 +82,6 @@
     <div id="settings">
         Sensitivity: <input type="range" min="0" max="0.99" value="0.8" step="0.01" id="sensitivity"/> |
         <input type="checkbox" id="activateHat"> Hat |
-        <input type="checkbox" id="activateBlink"> Blink |
         <button onclick="this.innerHTML = toggleMic()?'Stop Mic':'Start Mic'">Start Mic</button> |
         <button onclick="location.reload(true)">Refresh</button>
     </div>
