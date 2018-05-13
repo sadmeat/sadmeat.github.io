@@ -7,8 +7,7 @@ var mousePressed = false;
 window.onload = () => main();
 
 function main() {
-  if(isExe())
-      document.querySelector('#goto').remove();
+  //if(isExe()) document.querySelector('#goto').remove();
   
   const canvas = document.querySelector('#canvas');
   const gl = canvas.getContext('webgl', {antialias: true});
