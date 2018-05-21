@@ -201,17 +201,23 @@ function calcBoneMatrix() {
 }
 
 function drawScene(gl, programInfo, buffers, texture, deltaTime) {
-  gl.clearColor(0.0, 1.0, 0.0, 1.0);  // Clear to black, fully opaque
-  gl.clearDepth(1.0);                 // Clear everything
-  gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-  gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+  var color = document.querySelector('#bcolor').value.match(/[\dA-Fa-f]{2}/g);
+  if(color!==null && color.length===3) {
+      color = color.map((v)=>parseInt(v, 16)/255);
+      gl.clearColor(color[0], color[1], color[2], 1.0);
+  } else {
+      gl.clearColor(0.0, 1.0, 0.0, 1.0);
+  }
+  gl.clearDepth(1.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
 
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 
-  const fieldOfView = 50 * Math.PI / 180;   // in radians
+  const fieldOfView = 50 * Math.PI / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
   const zFar = 100.0;
