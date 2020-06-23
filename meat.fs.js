@@ -1,5 +1,7 @@
 const fsSource = `
     #line 3
+    precision highp float;
+
     varying highp vec2 vTextureCoord;
     varying mediump vec3 vNormal;
     varying mediump vec3 vTangent;
