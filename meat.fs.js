@@ -40,17 +40,17 @@ const fsSource = `
             totalDiffuse = vec3(0.0);
             totalSpecular = vec3(pow(dot(normal, normalize(vec3(0.1, 0.15, -1))), 200.0))*2.0;
         } else if (uHat) {
-            mediump float fresnel = fresnel_(normal, vec3(0, 0, -1), 2.0);
+            mediump float fresnel = fresnel_(normal, vec3(0, 0, 1), 2.0);
             color = blendSoftLight(texture2D(hatTexture, vTextureCoord).rgb, (texture2D(fabricTexture, vTextureCoord*2.0).rgb-0.6)*0.4+0.6);
             color = mix(color, color*0.7, fresnel);
             
-            totalDiffuse = vec3(fresnel_(normal, vec3(0, 0, -1), 0.5));
+            totalDiffuse = vec3(fresnel_(normal, vec3(0, 0, 1), 0.5));
             totalSpecular = vec3(0.0);
             
         } else {
             mediump vec3 baseColor1 = vec3(1.0, 0.597202, 0.401978);
             mediump vec3 baseColor2 = vec3(0.461568, 0.086268, 0.056358);
-            mediump float fresnel = fresnel_(normal, vec3(0, 0, -1), 1.3);
+            mediump float fresnel = fresnel_(normal, vec3(0, 0, 1), 2.3);
             mediump float ao = texture2D(aoTexture, vTextureCoord).r;
 
             baseColor1 = blendSoftLight(baseColor1, vec3(ao));

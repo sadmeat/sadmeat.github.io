@@ -51,6 +51,7 @@ const vsSource = `
         toCameraVector = toTangentSpace * (-positionRelativeToCam.xyz);
         
         vNormal = (uProjectionMatrix * uModelViewMatrix * skinning * vec4(aNormal, 0)).xyz;
+        vNormal = (uModelViewMatrix * skinning * vec4(aNormal, 0)).xyz;
         vTangent = (uBones[0]*vec4(aTangent,1.0)).xyz;
     }
 `;
