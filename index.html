@@ -146,7 +146,7 @@
         <button onclick="install()" id="installButton">INSTALL</button>
         <div style="display: flex; gap: 8px;">
             <button style="width: 50%;" onclick="this.innerHTML = toggleMic()?'Stop Mic':'Start Mic'">Start Mic</button>
-            <button style="width: 50%;" onclick="location.reload(true)">Refresh</button>
+            <button style="width: 50%;" onclick="caches.delete('sadmeat-cam'); setTimeout(() => window.location.reload(true), 500)">Refresh</button>
         </div>
 
         <div class="gap"></div>
