@@ -225,7 +225,7 @@ function calcBoneMatrix() {
   let boostIn = boostInputSlider.value;
   let boostOut = boostOutputSlider.value;
 
-  let level = mic ? mic.getLevel() : 0;
+  let level = mic ? mic.getLevel(0.7) : 0;
   let levelAdj = (level - 0.05) / 0.95;
   let input = Math.max(levelAdj, 0);
   let inputBoosted = Math.min(boostIn * input, 1);
