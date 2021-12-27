@@ -180,9 +180,9 @@ function precalcBoneMatrix() {
   sensitivityLabel = document.getElementById("sensitivityLabel");
   boostInputLabel = document.getElementById("boostInputLabel");
   boostOutputLabel = document.getElementById("boostOutputLabel");
-  sensitivitySlider.value = parseFloat(localStorage.getItem("sensitivity") || 0.5);
-  boostInputSlider.value = parseFloat(localStorage.getItem("boostInput") || 2.0);
-  boostOutputSlider.value = parseFloat(localStorage.getItem("boostOutput") || 2.0);
+  sensitivitySlider.value = parseFloat(localStorage.getItem("sensitivity") || -0.5);
+  boostInputSlider.value = parseFloat(localStorage.getItem("boostInput") || 1.5);
+  boostOutputSlider.value = parseFloat(localStorage.getItem("boostOutput") || 1.0);
   sensitivityLabel.innerText = parseFloat(sensitivitySlider.value).toFixed(2);
   boostInputLabel.innerText = parseFloat(boostInputSlider.value).toFixed(2);
   boostOutputLabel.innerText = parseFloat(boostOutputSlider.value).toFixed(2);
@@ -192,7 +192,7 @@ function precalcBoneMatrix() {
   boostInputSlider.oninput = () => boostInputLabel.innerText = parseFloat(boostInputSlider.value).toFixed(2);
   boostOutputSlider.onchange = () => localStorage.setItem("boostOutput", boostOutputSlider.value);
   boostOutputSlider.oninput = () => boostOutputLabel.innerText = parseFloat(boostOutputSlider.value).toFixed(2);
-  
+
   fpsSlider = document.getElementById("framerate");
   fpsLabel = document.getElementById("framerateLabel");
   fpsSlider.value = parseFloat(localStorage.getItem("framerate") || 30);
@@ -221,15 +221,22 @@ function calcBoneMatrix() {
     headY = headY * a + (1 - a) * mouseY * 1;
   }
 
-  let sensitivity = 1 - Math.sqrt(sensitivitySlider.value);
+  let sensitivity = parseFloat(sensitivitySlider.value);
+  let sensitivityMod = (sensitivity + 1) % 1;
   let boostIn = boostInputSlider.value;
   let boostOut = boostOutputSlider.value;
 
-  let level = mic ? mic.getLevel(0.7) : 0;
-  let levelAdj = (level - 0.05) / 0.95;
+  const CLIP_LOW_VALUE = 0.05;
+  const SLOPE_SCALE = 0.95;
+
+  let level = mic ? mic.getLevel() : 0;
+  let levelAdj = (level - CLIP_LOW_VALUE) / (1 - CLIP_LOW_VALUE);
   let input = Math.max(levelAdj, 0);
   let inputBoosted = Math.min(boostIn * input, 1);
-  let output = Math.pow(inputBoosted, 4 * sensitivity) / 0.95;
+  // let output = Math.pow(inputBoosted, 4 * sensitivity);
+  let output = sensitivity < 0 ?
+    Math.pow(inputBoosted, 1 / (sensitivityMod * SLOPE_SCALE + (1 - SLOPE_SCALE))) :
+    Math.pow(inputBoosted, 1 - (sensitivityMod * SLOPE_SCALE));
   let outputBoosted = boostOut * output;
   let volume = outputBoosted;
 
@@ -301,7 +308,7 @@ function drawScene(gl, programInfo, buffers, texture, deltaTime) {
 
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-  mat4.fromTranslation(modelViewMatrix, [-0.0, -4.0, -6]);
+  mat4.fromTranslation(modelViewMatrix, [-0.0, -3, -8]);
   //mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -4.0, -20.5]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 2 + 0.01 * Math.sin(time * 1.5), [1, 0, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, +0.125 + 0.06 * Math.sin(time * 0.6), [0, 0, 1]);
@@ -419,13 +426,13 @@ function mouseHandle(e) {
 }
 
 function toggleMic() {
-    if(mic === undefined) {
-        mic = new Microphone();
-        mic.init();
-        return true;
-    } else {
-        mic = undefined;
-        return false;
-    }
-    
+  if (mic === undefined) {
+    mic = new Microphone(0.3);
+    mic.init();
+    return true;
+  } else {
+    mic.stop();
+    mic = undefined;
+    return false;
+  }
 }
