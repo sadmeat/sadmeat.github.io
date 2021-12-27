@@ -1,4 +1,4 @@
-var cacheName = 'sadmeat-cam-v2';
+var cacheName = 'sadmeat-cam';
 var filesToCache = [
   '/',
   '/index.html',
