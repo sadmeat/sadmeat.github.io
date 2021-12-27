@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Cache-control" content="no-cache">
     <meta http-equiv="Expires" content="-1">
     
+    <link rel="manifest" href="/manifest.json">
     <script src="gl.matrix.js"></script>
     <script src="mic.js"></script>
     <script src="meat.verts.js"></script>
@@ -10,6 +12,49 @@
     <script src="meat.vs.js"></script>
     <script src="meat.fs.js"></script>
     <script src="gl.js"></script>
+    <script>
+        // Initialize deferredPrompt for use later to show browser install prompt.
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            // showInstallPromotion();
+            document.getElementById("installButton").style.display = 'inherit';
+            // Optionally, send analytics event that PWA install promo was shown.
+            console.log(`'beforeinstallprompt' event was fired.`);
+        });
+
+        const install = async () => {
+            // Hide the app provided install promotion
+            // hideInstallPromotion();
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            // Optionally, send analytics event with outcome of user choice
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+        };
+
+
+        window.onload = () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').then(function (reg) {
+                    console.log('Successfully registered service worker', reg);
+                }).catch(function (err) {
+                    console.warn('Error whilst registering service worker', err);
+                });
+            }
+
+            glmain();
+        }
+    </script>
+
     <style>
     * {
         font-family: "Courier New";
@@ -86,6 +131,7 @@
         <input type="checkbox" id="activateBlink"> Blink |
         <button onclick="this.innerHTML = toggleMic()?'Stop Mic':'Start Mic'">Start Mic</button> |
         <button onclick="location.reload(true)">Refresh</button>
+        <button onclick="install()" id="installButton">INSTALL</button>
     </div>
 </body>
 </html>

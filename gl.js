@@ -4,11 +4,10 @@ var mouseX = 0;
 var mouseY = 0;
 var mousePressed = false;
 
-window.onload = () => main();
 
-function main() {
   //if(isExe()) document.querySelector('#goto').remove();
   
+function glmain() {
   const canvas = document.querySelector('#canvas');
   const gl = canvas.getContext('webgl', {antialias: true});
   

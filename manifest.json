@@ -1,0 +1,15 @@
+{
+  "name": "MeatCam",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#00ff00",
+  "theme_color": "#00ff00"
+}
